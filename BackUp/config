@@ -1,0 +1,127 @@
+# Configuration file for ripple.
+
+[DEFAULT]
+# 'DEFAULT' as used above is a _special_ 'section' name which allows you to
+# set defaults as you wish. For other 'section's, the name is of your choosing.
+
+# When defining your own instances, you do not need to assign attributes
+# if the default (as given here) is suitable.
+
+# In the following (comment) field you can put anything you want.
+# It is for the user's benefit and can be used as a means of 
+# identifying the desired backup instance. 
+# Note that there is no need for quotes.
+
+comment = default comment line
+
+# YOU DEFINITELY NEED TO MAKE AN ENTRY FOR the next 2 FIELDS
+# It is advisable to use absolute paths; relative paths are
+# considered relative to $(pwd) as you'd expect.
+# Whether or not the source ends in a slash DOES have CONSEQUENCES.
+# (See notes at end of this file.)
+source = /path/directory 
+
+# Slash or no slash at end of destination directory matters not.
+destination_dir = /path/directory/
+
+# The next field must be changed if the back up is going to another host.
+destination_host = localhost  
+
+# Change if destination ssh server is listening on an unconventional port.
+destination_port = 22          
+
+# Change if backing up onto a different user's account.
+destination_user = alex
+
+# The following can be thought of as sensible defaults. 
+# It's unlikely that you'll want to change any of them.
+backup_name = bu.              # These three defaults result in
+suffix_length = 3              # the most recent snapshot being
+max_number_of_Snapshots = 100  # in a subdirectory named 'bu.000'
+
+# You may want to use an "exclude" file as defined by man rsync.
+# exclude_file = /path/directory/rip_exclude
+exclude_file = /home/alex/Python/Bu/rip_exclude
+
+[test1]
+comment = for testing: local host both ends.
+source = tests/data/source/
+destination_dir = tests/data/dest
+
+[tn]
+comment = testing on local network: ~/Soups to dp4:/mnt/BU/Soups
+source = /home/alex/Soups/
+destination_dir = /mnt/BU/Soups
+destination_host = dp4
+
+[tw]
+comment = testing on remote network: ~/Soups to indi303:/mnt/BU/Soups
+source = /home/alex/Soups/
+destination_dir = /mnt/BU/Soups
+destination_host = indi303.net
+destination_port = 5226
+
+[dp4wifi]
+comment = My home directory to dp4 via dp4 AP within Bolinas. 
+source = /home/alex/
+destination_dir = /mnt/BU/X301alex
+destination_host = dp4wifi
+# exclude_file = /path/directory/rip_exclude
+
+[bolinas]
+comment = My home directory to Bolinas. 
+source = /home/alex/
+destination_dir = /mnt/BU/X301alex
+destination_host = kleider.ca
+destination_port = 5224
+
+[loft]
+comment = My home directory to loft.
+source = /home/alex/
+destination_dir = /mnt/BU/X301alex
+destination_host = indi303.net
+destination_port = 5322
+
+[pi0]
+comment = My home directory to pi0 while at house boat.
+source = /home/alex/
+destination_dir = /mnt/BU/X301-alex
+destination_host = pi0
+
+[pi0I]
+comment = My '/Images/Dp/M13' file system to pi0 while in houseboat.
+source = /Images/Dp/M13/
+destination_dir = /mnt/BU/M13Bu
+destination_host = pi0
+
+[dp8]
+comment = My home directory to dp8 while in Bolinas.
+source = /home/alex/
+destination_dir = /mnt/BU/X301alex
+destination_host = dp8
+
+[pi1]
+comment = My home directory to pi1 while at loft.
+source = /home/alex/
+destination_dir = /mnt/BU/X301alex
+destination_host = pi1
+
+[rwc]
+comment = My home directory to RWC.
+source = /home/alex/
+destination_dir = /mnt/BU/X301alex
+destination_host = kleider.ca
+destination_port = 5223
+
+[todd]
+comment = My home directory to Todd's.
+source = /home/alex/
+destination_dir = /mnt/ak/X301alex
+destination_host = bvtdk.dyndns.org
+destination_port = 5151
+
+# NOTES re slash at end of source file:
+# /path/source will put the whole directory 'source' into the directory bu.00
+# /path/source/ will put all contents of 'source' into the directory bu.00 ..
+# In this second instance, the directory 'source' itself does not get moved.
+
