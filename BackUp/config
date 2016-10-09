@@ -17,36 +17,77 @@ comment = default comment line
 # YOU DEFINITELY NEED TO MAKE AN ENTRY FOR the next 2 FIELDS
 # It is advisable to use absolute paths; relative paths are
 # considered relative to $(pwd) as you'd expect.
-# Whether or not the source ends in a slash DOES have CONSEQUENCES.
-# (See notes at end of this file.)
-source = /path/directory 
 
-# Slash or no slash at end of destination directory matters not.
-destination_dir = /path/directory/
+# Source: directory to be backed up.
+# You may choose to back up the directory and all its contents or
+# to back up only its content.  (See notes at end of this file.)
+# The presence or absence of a trailing '/' determines.
+# It is suggested that you do add a slash to the end AND use the 
+# name of the final directory in the path as the final directory 
+# in the path designated by destination_dir.
+source = /path/to/source/directory/
 
-# The next field must be changed if the back up is going to another host.
+# Target: directory on the destination host where the bu.nnn
+# snapshots are stored.  It is suggested that the final directory
+# name of this path match that of the the one specified by source.
+# The presence of a trailing slash makes no difference here.
+destination_dir = /path/to/destination/directory/
+
+# The next field must be changed if the back up is going to another
+# host; otherwise use 'localhost' or leave blank.
 destination_host = localhost  
 
-# Change if destination ssh server is listening on an unconventional port.
+# Change if target ssh server is not listening on port 22.
 destination_port = 22          
 
-# Change if backing up onto a different user's account.
-destination_user = alex
+# Needed only if target us under a different user's account.
+destination_user =
 
-# The following can be thought of as sensible defaults. 
+# If target is remote, permissions must be set so the user can
+# write to the following directory on the target host.
+# Most Linux distos are set up to make this possible by default.
+#destination_tmp_dir = /tmp
+# Expect won't need this- plan to run local script on remote host
+# passing parameters from local host using ssh.
+
+# The following two items can be thought of as sensible defaults. 
 # It's unlikely that you'll want to change any of them.
-backup_name = bu.              # These three defaults result in
-suffix_length = 3              # the most recent snapshot being
-max_number_of_Snapshots = 100  # in a subdirectory named 'bu.000'
+# If you do, be sure to note that you will need to make changes
+# within the ripple.py script with is run on the destination host.
+# NOTE: testing to see if changing these defaults will not cause
+# failure is not likely to happen any time soon!!!!!
+# The most recent snapshot will be in directory 'bu.000' with in
+# the directory specified by destination_dir.
+backup_name = bu
+suffix_length = 3
+# The max_number_of_snapshots becomes '9' * suffix_length.
+# It's calculated in src.backup.get_section_specifics().
 
 # You may want to use an "exclude" file as defined by man rsync.
 # exclude_file = /path/directory/rip_exclude
-exclude_file = /home/alex/Python/Bu/rip_exclude
+exclude_file =
 
-[test1]
+rippler = BackUp/src/ripple.py
+# The 'rippling script': it increments the suffix of each
+# snapshot (so that the file bu.000 is moved to bu.001 and its
+# name becomes available to be made into a hard link copy of the
+# most recent backup and to serve as the target for the next
+# backup.)
+
+[test_local]
 comment = for testing: local host both ends.
 source = tests/data/source/
 destination_dir = tests/data/dest
+exclude_file = tests/data/rip_exclude
+
+[test_remote]
+comment = for testing: bu on remote host.
+source = tests/data/source/
+destination_dir = /mnt/BU/Sandbox
+destination_host = indi303.net
+destination_port = 5322
+destination_user = alex
+exclude_file = tests/data/rip_exclude
 
 [tn]
 comment = testing on local network: ~/Soups to dp4:/mnt/BU/Soups

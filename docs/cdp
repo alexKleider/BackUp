@@ -1,0 +1,85 @@
+# file: cdp  (near Continuous Data Protection)
+
+PROJECT: BackUp
+
+PREAMBLE:
+From Google:
+    Continuous Data Protection
+    Near-CDP =:= Snapshotting
+
+From W. Curtis Preston: Backup & Recovery - O'Reilly:
+
+Continuous data protection (CDP) is a form of data replication
+that copies data from a source to a target. True CDP does this
+every time a change is made, while so-called near-CDP does this
+at pre-set time intervals. Near-CDP is effectively the same as
+snapshotting.
+
+Goal: an incremental system providing a full backup of any 
+version available.  Possible ways:
+    1. push-to-server
+    2. pull-from-server
+    3. locally
+
+GOAL:
+This projects provides functionality for (1) & (3).
+
+METHODOLOGY:
+'rsync' with Snapshots:
+    (The target directory must support hard links.)
+    (rsync always unlinks before over writing.)
+    (see: http://www.mikerubel.org/computers/rsync_snapshots/
+    referenced in http://linuxmafia.com/kb/Admin/)
+    (Also very use full:
+    https://jimmyg.org/blog/2007/incremental-backups-using-rsync.html)
+Stages:
+    1. Copy one directory (source) to another (target.)
+        $ rsync -az --delete -e "ssh -p22 pi" \
+            --exclude-from=tests/data/rip_exclude \
+            tests/data/source  \
+            pat.lan:/var/BU/
+        $ rsync -a --delete /path/to/source/directory/  \
+                            /path/to/target/directory/bu.000
+        Note: in the above command, the last entry of the path
+        ("directory") of the 1st param (the source) is terminated
+        by a slash ("/") and it is named the same as the second
+        last directory in the path of the 2nd param.  We arrange
+        the naming in this way so that when examining the destination
+        directory structure we know which directory of the source has
+        its snapshots in the destination directory (the same name.)
+        i.e. the parent directory of the bu.nnn snapshots is given
+        the same name as the source directory being backed up.
+    2. IF exists a bu.nnn where nnn>000 (won't be true 1st time):
+        begin at highest number and mv each bu.nnn to bu.nnn+1
+        I'm calling this "rippling."
+        def rippling(path_to_target_directory,
+                    backup_name = "bu",
+                    suffix_length = 3):
+    3. Create a hard link copy.
+        $ cp -al /path/to/target/directory/bu.001  \
+                /path/to/target/directory/bu.000
+        Without the -l option of the cp command (not available on
+        the MacOS,) a special function is
+        needed to accomplish this:
+        def hard_link(path_to_target_directory,
+                        source = 'bu.001',
+                        dest = 'bu.000'):
+        BUT: rsync might be able to do this! See:
+          --link-dest=DIR   hardlink to files in DIR when unchanged
+          NOTE: --link-dest=DIR must be specified relative to Target,
+          NOT relative to pwd.
+        $ rsync -a --link-dest=../bu.001 Target/bu.001/ Target/bu.000
+
+Implementation on foreign host:
+    1. Run rsync on the client machine:
+        $ rsync -az --delete -e "ssh -p5322 alex" \
+            --exclude-from=rip_exclude \
+            source \
+            indi303.net:/mnt/BU/Sandbox/bu.000
+    2. Run ripple.py (with cl parameters) remotely (on backup host.)
+        $ ssh -p5322 alex@indi303.net python3 -u - \
+                                     target bu 3 < ripple.py
+    3. Create the hard link copy using rsync:
+        $ ssh -p5322 indi303.net 'bash -s' -- < rsync \
+            -a --link-dest=../bu.001 Target/bu.001/ Target/bu.000
+
