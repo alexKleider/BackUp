@@ -1,20 +1,96 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 # vim: set file encoding=utf-8 :
-#
-# file: 'tests/test1.py'
+
+# file: 'Backup/tests/test1.py'
 # Part of ___, ____.
 
 # Copyright 2016 Alex Kleider
 # See COPYING.txt distributed with this file.
-#"""
-#Part of backup utility test suite.
-#Begin by testing setup of testing directory structure.
-#"""
+
+"""
+Part of backup utility test suite.
+Begin by testing setup of testing directory structure.
+"""
 import unittest
 import os
-import subprocess as sub
-import src.backup as bu
+import sys
+import subprocess
+cwd = os.getcwd()
+if not (cwd in sys.path):
+    sys.path.insert(0, cwd)
+import BackUp.src.backup as bu
+
+
+def check(prompt):
+    """
+    Stops execution providing an opportunity
+    for mannual checks.
+    """
+    _ = input(
+    "{}- then <--|".format(prompt))
+
+def create_file_hierarchy_in(
+            existing_dir="Backup/tests/data/source"):
+    """
+    Creates a testing directory hierarchy.
+    """
+#   check("ENTERING create_file_heirarchy_in('{}')."
+#               .format(existing_dir))
+    target = os.path.abspath(existing_dir)
+    return subprocess.call([
+        "BackUp/tests/scripts/createdirstruct.sh",
+        target])
+
+def destroy_test_content(
+            dir1="Backup/tests/data/source",
+            dir2="Backup/tests/data/dest"):
+    d1 = os.path.abspath(dir1)
+    d2 = os.path.abspath(dir2)
+    return subprocess.call([
+        "BackUp/tests/scripts/destroy2params.sh",
+        d1, d2])
+
+def populate_files_with_text(fileset):
+    for file_name in fileset:
+        with open(file_name, 'w') as f:
+            f.write("Initial entry in text file:\n{}\n"
+                        .format(file_name))
+
+def modify_files(fileset, lastchar=None):
+    """Modifies files in <fileset>.
+    By default all are modified.
+    If <lastchar> is set, the only files modified are
+    those with a last character that matches <lastchar>.
+    """
+    header = "First addition to files"
+    if lastchar:
+        header = ("First addition to files ending in '{}'"
+                            .format(lastchar))
+    for file_name in fileset:
+        if (lastchar is None) or (file_name[-1] == lastchar): 
+            with open(file_name, 'a') as f:
+                f.write("{}:\n\t{}\n"
+                            .format(header, file_name))
+
+def get_directory_and_file_sets(containing_directory):
+    """Helper function- tested by client: MoveFiles.test_dir_setup().
+    """
+    directory = os.path.abspath(containing_directory)
+#   check("Planning to os.walk {}.".format(directory))
+    dirset = set()
+    fileset = set()
+#   check("Is the containing_directory populated?")
+    for root, dirs, files in os.walk(directory):
+#       print("root, dirs == {}, {}".format(root, dirs))
+        for d in dirs:
+            dirset.add(os.path.join(root, d))
+        for f in files:
+            fileset.add(os.path.join(root, f))
+#   print("Sets being returned are:")
+#   print("Directories: {}".format(dirset))
+#   print("Files: {}".format(fileset))
+    return dirset, fileset
 
 DIRSET = {
 '/home/alex/Py/BackUp/BackUp/tests/data/source/DirA',
@@ -60,14 +136,17 @@ FILESET = {
 class MoveFiles(unittest.TestCase):
     """
     Indirectly tests the makedirstruct.sh script.
-
     """
     maxDiff = None
 
     def setUp(self):
+        # Just in case clean up failed during a previous run:
+        subprocess.call(['./BackUp/tests/scripts/destroy.sh'])
+
         script_file = os.path.abspath(
             'BackUp/tests/scripts/makedirstruct.sh')
-        error_code = sub.call([script_file, ])
+        error_code = subprocess.call([script_file, ])
+#       check("Check that source dir hierarchy has been set up.")
         if error_code:
             print(
                 "#!#! Couldn't set up directory hierarchy. #!#!")
@@ -75,19 +154,20 @@ class MoveFiles(unittest.TestCase):
 
     
     def test_dir_setup(self):
-        parent = './Backup/tests/data/source'
+        parent = 'BackUp/tests/data/source'
+#       check("Calling get_dir...({})".format(parent))
         dirset, fileset = get_directory_and_file_sets(parent)
         populate_files_with_text(fileset)
 #       check("Check first entry")
         modify_files(fileset, "1")
 #       check("Check second entry (to '1' files)")
-        print("Set sizes are {} | {} and {} | {}"
-            .format(len(fileset), len(FILESET),
-                    len(dirset), len(DIRSET)))
+#       check("Set sizes are {} | {} and {} | {}"
+#           .format(len(fileset), len(FILESET),
+#                   len(dirset), len(DIRSET)))
         self.assertEqual((fileset, dirset), (FILESET, DIRSET))
 
     def tearDown(self):
-        sub.call(['./BackUp/tests/scripts/destroy.sh'])
+        subprocess.call(['./BackUp/tests/scripts/destroy.sh'])
 
 class GetConfiguration(unittest.TestCase):
 

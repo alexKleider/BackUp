@@ -8,7 +8,7 @@
 # Copyright 2016 Alex Kleider
 # See COPYING.txt distributed with this file.
 """
-Put your docstring here.
+backup.py: main module of BackUp
 """
 
 import os

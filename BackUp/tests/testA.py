@@ -17,9 +17,10 @@ import sys
 # print(sys.path)
 import unittest
 import subprocess as sub
-sys.path.append(os.getcwd())
+cwd = os.getcwd()
+if not (cwd in sys.path):
+    sys.path.insert(0, cwd)
 import BackUp.src.backup as bu
-
 
 
 DIRSET = {
@@ -72,51 +73,6 @@ def get_dict(dict_like_object):
     for key in dict_like_object:
         real_dict[key] = dict_like_object[key]
     return real_dict
-
-def get_directory_and_file_sets(parent):
-    """Helper function- tested by client: MoveFiles.test_dir_setup().
-    """
-    print("ENTERING create_file_heirarchy_in")
-    print("Planning to os.walk {}.".format(os.path.abspath(parent)))
-    dirset = set()
-    fileset = set()
-    for root, dirs, files in (
-                    os.walk(os.path.abspath(parent))):
-        print("root, dirs == {}, {}".format(root, dirs))
-        for d in dirs:
-            dirset.add(os.path.join(root, d))
-        for f in files:
-            fileset.add(os.path.join(root, f))
-    return dirset, fileset
-
-def populate_files_with_text(fileset):
-    for file_name in fileset:
-        with open(file_name, 'w') as f:
-            f.write("Initial entry in text file:\n{}\n"
-                        .format(file_name))
-
-def modify_files(fileset, lastchar=None):
-    """Modifies files in <fileset>.
-    By default all are modified.
-    If <lastchar> is set, only files who's last character matches are
-    modified.
-    """
-
-    header = "First addition to files"
-    if lastchar:
-        header = ("First addition to files ending in '{}'"
-                            .format(lastchar))
-    for file_name in fileset:
-        if (lastchar is None) or (file_name[-1] == lastchar): 
-            with open(file_name, 'a') as f:
-                f.write("{}:\n\t{}\n"
-                            .format(file_name))
-
-def check(prompt):
-    """Stops execution providing an opportunity to check status.
-    """
-    _ = input(
-    "{}- then <--|".format(prompt))
 
 class ShowArgs(unittest.TestCase):
     """
