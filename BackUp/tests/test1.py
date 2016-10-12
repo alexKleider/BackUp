@@ -215,7 +215,7 @@ class GetConfiguration(unittest.TestCase):
           )
  
     test_remote = dict(
-        comment = 'for testing: local host both ends.',
+        comment = 'for testing: bu on remote.',
         source = 'tests/data/source/',
         destination_dir = 'tests/data/dest',
         destination_host= 'pat.lan',

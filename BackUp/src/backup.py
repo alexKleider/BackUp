@@ -13,6 +13,7 @@ backup.py: main module of BackUp
 
 import os
 import sys
+import getpass
 import configparser
 
 CONFIG_FILE = 'BackUp/config'  # The default configuration file.
@@ -86,119 +87,61 @@ def get_section_specifics(section=None):
             ret[key] = section_dict[key]
         ret['max_number_of_snapshots'] = int(
                 '9' * int(ret['suffix_length']))
+        if not ret['user']:
+            ret['user'] = getpass.getuser()
         return ret
 
 def get_commands(section_specifics):
     """
-    Takes the output of get_section_specifics()
-    and returns a dict of 5 commands.
-        rsync: to do the backup using rsync-
-            "rsync -a{} --delete {} {} {} {} ".format(
-                    compression_option,
-                        rsync_port, exclude,
-                        section_specifics["source"],
-                        dest),
-        scp_conf: to move config data to destination.
-        scp_script: to run local rippling script on the
-            destination host:
-            ssh root@MachineB 'bash -s' < local_script.sh
-        chmod: NOT NEEDED because we will run local script
-            on destination machine rather than send the script to the
-            destination machine and run it there.
-        ripple= rip_cmd,
-
-Implementation on foreign host:
+    Takes the output of get_section_specifics() (a dict)
+    and returns a dict of the 3 required commands:
     1. Run rsync on the client machine:
-        $ rsync -az --delete -e "ssh -p5322 alex" \
-            --exclude-from=rip_exclude \
-            source \
-            indi303.net:/mnt/BU/Sandbox/bu.000
+        $ rsync -az --delete -e "ssh -p<port> <user>" \
+            --exclude-from=<exclude_file> \
+            <source> \
+            <host>:<destination_dir>/bu.000
     ## --exclude-from=FILE     read exclude patterns from FILE
-    2. Run ripple.py (with cl parameters) remotely (on backup host.)
-        $ ssh -p5322 alex@indi303.net python3 -u - \
-                                     target bu 3 < ripple.py
+    2. Run the local ripple.py script (with command line
+    parameters) remotely (on the backup host:)
+        $ ssh -p<port> <user>@<destination_host> python3 -u - \
+         <destination_dir> <backup_name> <suffix_length> < <rippler>
     3. Create the hard link copy using rsync:
-        $ ssh -p5322 indi303.net 'bash -s' -- < rsync \
-            -a --link-dest=../bu.001 Target/bu.001/ Target/bu.000
+        $ ssh -p<port> <destination_host> 'bash -s' -- < rsync \
+            -a --link-dest=../bu.001 \
+            <destination_dir>/bu.001/ <destination_dir>/bu.000
     """
-    colon = ''
-    compression_option = ""
-    host = section_specifics["destination_host"]
-    port = section_specifics["destination_port"]
-    dest_dir = section_specifics["destination_dir"]
-    if  section_specifics["destination_user"]:
-        user_option = "-oUser={}".format(
-                section_specifics['destination_user'])
-    else:
-        user_option = ''
-    if dest_dir[-1] != '/':
-        dest_dir = dest_dir + '/'
-    if (not host) or (host  == "localhost"):
-        host = ""
-        port = ""
-    else:
-        colon = ':'
-        compression_option = "z"
-    if port:
-        rsync_port = '-e "ssh -p{} {}"'.format(port, user_option)
-        ssh_port = '-oPort={} {}'.format(port, user_option)
-    else:
-        rsync_port = ''
-        ssh_port = ''
-    outf = '{}{}.{}'.format(dest_dir,
-                section_specifics["backup_name"],
-                '0' * int(section_specifics["suffix_length"]))
-    dest = '{}{}{}'.format(host, colon, outf)
+    ret = dict()
 
+    # 1  Run rsync:
+    sp = section_specifics
+    rsync_ssh = ' -e "ssh -p{} {}"'.format(sp.port, sp.user)
+    rsync_exclude = ' --exclude-from={}'.format(sp.exclude_file)
+    rsync_dest = ' {}:{}'.format(sp.destination_host,
+                                    sp.destination_dir)
+    ret["rsync"] = "rsync -az --delete{}{}{}{}{}".format(
+                rsync_ssh, rsync_exclude, sp.source, rsync_dest)
 
-    if section_specifics["exclude_file"]:
-        if os.path.isfile(section_specifics["exclude_file"]):
-            exclude = ('--exclude-from={}'
-                .format(section_specifics["exclude_file"]))
-        else:
-            exclude = ''
-            aklib.optional_info(globals.debug,
-                    "Specified exclude file doesn't exist.")
-    else:
-        exclude = ''
+    # 2  Run the local ripple script on the remote host:
+    ret["ripple"] = ('ssh -p{} {}@{} python3 -u - {} {} {} < {}'
+                # Command line parameters:         ^  ^  ^    ^
+                #    target------------------------'  |  |    |
+                #    backup_name----------------------'  |    |
+                #    suffix_length-----------------------'    |
+                # Script to execute (on remote host)----------'
+                .format(sp.port, sp.user, sp.destination_host,
+                        target, sp.backup_name, sp.suffix_length,
+                        sp.rippler))
 
+    # 3  Run local rsync remotely to create the hard link copy:
+    link_dest = '../bu.001' 
+    target_bu1 = 'Target/bu.001/' 
+    target_bu2 = 'Target/bu.000'
+    ret["link"] = (
+    "ssh -p{} {}@{} 'bash -s' -- < rsync -a --link-dest={} {} {}"
+                .format(port, user, destination_host,
+                        target, backup_name, suffix_length))
 
-    rsync_cmd = "rsync -a{} --delete {} {} {} {}".format(
-            compression_option, rsync_port,
-            exclude, section_specifics["source"],
-            dest)
-
-
-    if host:  # Back up is to a remote host.
-        # Arrange rippling cmd to be on remote host
-        # and make sure rippling cmd is executable.
-        Remote_Rippling_Script = os.path.join(
-                section_specifics["destination_tmp_dir"], RIPPLER)
-        dest = '{}{}{}'.format(host, colon,
-                                Remote_Rippling_Script)
-        scp_script_cmd  = 'scp -p {} {} {}'.format(ssh_port,
-                                        RIPPLER, dest)
-        chmod_cmd = 'ssh {} {} chmod 755 {}'.format(ssh_port,
-                                    host, Remote_Rippling_Script)
-        rip_cmd = 'ssh {} {} {}'.format(ssh_port, host,
-                                        Remote_Rippling_Script)
-    else:
-        scp_conf_cmd = ''
-        scp_script_cmd = ''
-        chmod_cmd = ''
-        rip_cmd = RIPPLER
-
-    return dict(
-        rsync= "rsync -a{} --delete {} {} {} {} ".format(
-                    compression_option,
-                        rsync_port, exclude,
-                        section_specifics["source"],
-                        dest),
-        scp_conf= scp_conf_cmd,
-        scp_script= scp_script_cmd,
-        chmod= chmod_cmd,
-        ripple= rip_cmd,
-            )
+    return ret
 
 def main():
     print("Running 'backup.main()'.......")

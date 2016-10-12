@@ -40,7 +40,7 @@ destination_host = localhost
 # Change if target ssh server is not listening on port 22.
 destination_port = 22          
 
-# Needed only if target us under a different user's account.
+# If not provided, will default to current user.
 destination_user =
 
 # If target is remote, permissions must be set so the user can
@@ -80,12 +80,21 @@ source = tests/data/source/
 destination_dir = tests/data/dest
 exclude_file = tests/data/rip_exclude
 
-[test_remote]
-comment = for testing: bu on remote host.
+[test_remote_indi]
+comment = for testing: bu on remote host indi303.net.
 source = tests/data/source/
 destination_dir = /mnt/BU/Sandbox
 destination_host = indi303.net
 destination_port = 5322
+destination_user = alex
+exclude_file = tests/data/rip_exclude
+
+[test_remote_pi]
+comment = for testing: bu on remote host 10.10.10.10.
+source = tests/data/source/
+destination_dir = /home/alex/BU
+destination_host = 10.10.10.10
+destination_port =
 destination_user = alex
 exclude_file = tests/data/rip_exclude
 
