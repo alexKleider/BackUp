@@ -7,10 +7,8 @@
 
 # Copyright 2016 Alex Kleider
 # See COPYING.txt distributed with this file.
-
 """
-Part of backup utility test suite.
-Begin by testing setup of testing directory structure.
+Test suite for backup utility.
 """
 import unittest
 import os
@@ -29,6 +27,16 @@ def check(prompt):
     """
     _ = input(
     "{}- then <--|".format(prompt))
+
+def get_dict(dict_like_object):
+    """
+    Solves the problem that configparser provides a dictionary like
+    object but it isn't of type dict.
+    """
+    real_dict = dict()
+    for key in dict_like_object:
+        real_dict[key] = dict_like_object[key]
+    return real_dict
 
 def create_file_hierarchy_in(
             existing_dir="Backup/tests/data/source"):
@@ -133,6 +141,133 @@ FILESET = {
 '/home/alex/Py/BackUp/BackUp/tests/data/source/DirC/SubDir_b/f3',
 }
 
+class ShowArgs(unittest.TestCase):
+    """
+    Tests BackUp.src.backup.show_args().
+    """
+    header = "Arguments"
+    a_list = ['Kelly', 'Tanya', 'June', 'Alex']
+    a_dict = dict(
+        Kelly='youngest',
+        Tanya='oldest',
+        June='matriarch',
+        Alex='patriarch',
+        )
+    expected_4list = """{} are ...
+  Kelly
+  Tanya
+  June
+  Alex
+  ... end of report.
+""".format(header)
+    expected_4dict = """{} are ...
+  Alex: patriarch
+  June: matriarch
+  Kelly: youngest
+  Tanya: oldest
+  ... end of report.
+""".format(header)
+
+    def test_show_args_w_list(self):
+        self.assertEqual(bu.show_args(self.a_list, self.header),
+                        self.expected_4list)
+
+    def test_show_args_w_dict(self):
+        self.assertEqual(bu.show_args(self.a_dict, self.header),
+                        self.expected_4dict)
+
+
+class GetConfiguration(unittest.TestCase):
+    
+    DEFAULT = dict(
+        comment= 'default comment line',
+        source= '/path/to/source/directory/',
+        target= '/path/to/directory/holding/snapshots',
+        host= 'localhost',
+        port= '22',
+        user= 'alex',
+        backup_name= 'bu',
+        suffix_length= '3',
+        exclude_file= '',
+        rippler= 'BackUp/src/ripple.py',
+        # The following is calculated, not found in CONFIG:
+        max_number_of_snapshots= 999,
+        bu0= "bu.000",
+        bu1= "bu.001",
+        bu2= "bu.002",
+        )
+
+    test_local = dict(
+        comment = 'for testing: local host both ends.',
+        source = 'tests/data/source/',
+        target = 'tests/data/dest',
+        host= 'localhost',
+        port= '22',
+        user= 'alex',
+        backup_name= 'bu',
+        suffix_length= '3',
+        exclude_file = 'tests/data/rip_exclude',
+        rippler= 'BackUp/src/ripple.py',
+        max_number_of_snapshots= 999,
+        bu0= "bu.000",
+        bu1= "bu.001",
+        bu2= "bu.002",
+        )
+ 
+    test_remote_indi = dict(
+        comment = 'for testing: bu on remote host indi303.net.',
+        source = 'tests/data/source/',
+        target = '/mnt/BU/Sandbox',
+        host= 'indi303.net',
+        port= '5322',
+        user= 'alex',
+        backup_name= 'bu',
+        suffix_length= '3',
+        exclude_file = 'tests/data/rip_exclude',
+        rippler= 'BackUp/src/ripple.py',
+        max_number_of_snapshots= 999,
+        bu0= "bu.000",
+        bu1= "bu.001",
+        bu2= "bu.002",
+)
+ 
+    test_remote_pi = dict(
+        comment = 'for testing: bu on remote host 10.10.10.10.',
+        source = 'tests/data/source/',
+        target = '/home/alex/BU',
+        host= '10.10.10.10',
+        port= '22',
+        user= 'alex',
+        backup_name= 'bu',
+        suffix_length= '3',
+        exclude_file = 'tests/data/rip_exclude',
+        rippler= 'BackUp/src/ripple.py',
+        max_number_of_snapshots= 999,
+        bu0= "bu.000",
+        bu1= "bu.001",
+        bu2= "bu.002",
+)
+
+    def test_get_DEFAULT_section_specifics(self):
+        default = get_dict(bu.get_section_specifics('DEFAULT'))
+        self.assertEqual(default,
+                        self.DEFAULT)
+
+    def test_get_test_local_section_specifics(self):
+        test = get_dict(bu.get_section_specifics('test_local'))
+        self.assertEqual(test,
+                        self.test_local)
+
+    def test_get_test_remote_section_specifics_indi(self):
+        test = get_dict(bu.get_section_specifics('test_remote_indi'))
+        self.assertEqual(test,
+                        self.test_remote_indi)
+
+    def test_get_test_remote_section_specifics_pi(self):
+        test = get_dict(bu.get_section_specifics('test_remote_pi'))
+        self.assertEqual(test,
+                        self.test_remote_pi)
+
 class MoveFiles(unittest.TestCase):
     """
     Indirectly tests the makedirstruct.sh script.
@@ -174,11 +309,10 @@ class GetConfiguration(unittest.TestCase):
     DEFAULT = dict(
         comment= 'default comment line',
         source= '/path/directory',
-        destination_dir= '/path/directory/',
-        destination_host= 'localhost',
-        destination_port= '22',
-        destination_user= '',
-        destination_tmp_dir= '/tmp',
+        target= '/path/directory/',
+        host= 'localhost',
+        port= '22',
+        user= 'alex',
         backup_name= 'bu.',
         suffix_length= '3',
         exclude_file= '',
@@ -190,11 +324,10 @@ class GetConfiguration(unittest.TestCase):
     test_local = dict(
         comment = 'for testing: local host both ends.',
         source = 'tests/data/source/',
-        destination_dir = 'tests/data/dest',
-        destination_host= 'localhost',
-        destination_port= '22',
-        destination_user= '',
-        destination_tmp_dir= '/tmp',
+        target = 'tests/data/dest',
+        host= 'localhost',
+        port= '22',
+        user= 'alex',
         backup_name= 'bu.',
         suffix_length= '3',
         max_number_of_snapshots= 999,
@@ -208,20 +341,17 @@ class GetConfiguration(unittest.TestCase):
             'tests/data/source ' +
             '/tests/data/dest',
 
-        scp_conf= '',
-        scp_script= '',
-        chmod= '',
         ripple= './rip_bu.py',
+        link= '',
           )
  
     test_remote = dict(
         comment = 'for testing: bu on remote.',
         source = 'tests/data/source/',
-        destination_dir = 'tests/data/dest',
-        destination_host= 'pat.lan',
-        destination_port= '22',
-        destination_user= 'pi',
-        destination_tmp_dir= '/tmp',
+        target = 'tests/data/dest',
+        host= 'pat.lan',
+        port= '22',
+        user= 'pi',
         backup_name= 'bu.',
         suffix_length= '3',
         max_number_of_snapshots= 999,
@@ -245,51 +375,6 @@ class GetConfiguration(unittest.TestCase):
     def test_get_config_file_name(self):
         self.assertEqual(bu.get_config_file_name(),
                         bu.CONFIG_FILE)
-
-"""
-    def test_get_DEFAULT_section_specifics(self):
-        default = get_dict(bu.get_section_specifics('DEFAULT'))
-        self.assertEqual(default,
-                        self.DEFAULT)
-
-    def test_get_test_local_section_specifics(self):
-        test = get_dict(bu.get_section_specifics('test_local'))
-        self.assertEqual(test,
-                        self.test_local)
-
-    def test_get_commands_local(self):
-        commands = bu.get_commands(self.test_local)
-        with open('debug.txt', 'w') as f:
-            print(show_args(commands, 'test_local_cmds'),
-                                                file=f)
-            print(show_args(self.commands_local, 'assumed_cmds'),
-                                                file=f)
-        self.assertEqual(commands,
-                        self.commands_local)
-
-    def test_get_commands_remote(self):
-        commands = bu.get_commands(self.test_remote)
-        with open('debug.txt', 'a') as f:
-            print(show_args(commands, 'test_remote_cmds'),
-                                                file=f)
-            print(show_args(self.commands_remote, 'assumed_cmds'),
-                                                file=f)
-        self.assertEqual(commands,
-                        self.commands_remote)
-
-
-"""
-
-
-"""
-The info for each section provides for the following 5 commands:
-Traceback (most recent call last):
-  File "./tests/test1.py", line 211, in test_get_commands_remote
-      commands = bu.get_commands(self.test_remote)
-      AttributeError: 'GetConfiguration' object has no attribute
-      'test_remote'
-
-"""
 
 if __name__ == '__main__':  # code block to run the application
     unittest.main()
