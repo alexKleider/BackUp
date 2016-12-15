@@ -15,6 +15,8 @@ import os
 import sys
 import getpass
 import configparser
+#import shlex
+import subprocess
 
 CONFIG_FILE = 'BackUp/config'  # The default configuration file.
 RIPPLER = 'rippple.py'
@@ -58,11 +60,18 @@ def get_config_file_name():
 
 def get_suffix(number, length):
     """
-    Returns a <length> long string representing <number>
-    padded with zeros.
+    If able, returns a <length> long string representing <number>
+    padded with leading zeros if needed. Otherwise (number is
+    negative or won't fit) returns None.
     """
-    format_string = "{{:0>{}d}}".format(length)
-    return format_string.format(number)
+    len_ = int(length)
+    num_ = int(number)
+    if (len_ < 1
+    or num_ < 0
+    or num_ > int("9"*len_)):
+        return None
+    format_string = "{{:0>{}d}}".format(len_)
+    return format_string.format(num_)
 
 def get_section_specifics(section=None):
     """
@@ -71,6 +80,13 @@ def get_section_specifics(section=None):
     Sets 'max_number_of_snapshots' based on 'suffix_length' 
     Sets 'user' if not provided.
     Sets "bu0" and "bu1".
+    Still needs to set:
+        1. target user as well as source user,
+            t_user  s_user
+        2. url of source machine as well as target machine,
+            t_host  s_host
+        3. ditto for port
+            t_port  s_port
     Not yet implemented is query for a <section> if not provided.
     """
     config = configparser.ConfigParser()
@@ -107,6 +123,14 @@ def get_section_specifics(section=None):
                             get_suffix(1, ret['suffix_length']))
         ret['bu2'] = "{}.{}".format(ret["backup_name"],
                             get_suffix(2, ret['suffix_length']))
+        path_names = ret["to_expand"].split()
+        for path in path_names:
+            ret[path] = os.path.abspath(ret[path])
+        # The above line strips trailing slash which mustn't be lost
+        # for the source file if there.
+        if section_dict[path_names[0]][-1] == '/':
+            ret[path_names[0]] = ''.join((ret[path_names[0]],'/'))
+        ret["ordered_commands"] = ret["ordered_commands"].split()
         return ret
 
 def get_commands(section_specifics):
@@ -128,13 +152,30 @@ def get_commands(section_specifics):
             -a --link-dest=../bu.001 \
             <target>/bu.001/ <target>/bu.000
     """
+    check("$ within get_commands: CWD is {}.\n".format(os.getcwd()))
     ret = dict()
+
+    # 0  Be sure a bu1 directory exists in the target hierarchy.
+    ret["prn"] = ' '.join([
+    # Assign env vars:
+    "bu1={}".format(sp["bu1"]),
+    "&&",
+    "&&",
+    if [ ! -d $bu1 ] then mkdir $bu1 fi
+
+
+    "prn.sh",
+    "${}".format("bu1")-av --link-dest=$PWD/prior_dir host:src_dir/
+    new_dir/
+
+    ])
 
     # 1  Run rsync:
     sp = section_specifics
-    rsync_ssh = ' -e "ssh -p{} {}"'.format(sp["port"], sp["user"])
+    rsync_ssh = ' -e "ssh -p{}"'.format(sp["port"])
     rsync_exclude = ' --exclude-from={}'.format(sp["exclude_file"])
-    rsync_dest = ' {}:{}/{}'.format(sp["host"],
+    rsync_dest = ' {}@{}:{}/{}'.format(sp["user"],
+                                    sp["host"],
                                     sp["target"],
                                     sp["bu0"])
     ret["rsync"] = "rsync -az --delete{}{} {}{}".format(
@@ -144,7 +185,7 @@ def get_commands(section_specifics):
                 rsync_dest,  #---------------'
                 )
 
-    # 2  Run the local ripple script on the remote host:
+    # 2  Run local ripple script on remote host with parameters:
     ret["ripple"] = ('ssh -p{} {}@{} python3 -u - {} {} {} < {}'
                 # Command line parameters:         ^  ^  ^    ^
                 #    target------------------------'  |  |    |
@@ -155,34 +196,88 @@ def get_commands(section_specifics):
             sp["target"], sp["backup_name"], sp["suffix_length"],
                     sp["rippler"]))
 
-    # 3  Run local rsync remotely to create the hard link copy:
-    link_dest = '../{}'.format(sp['bu1']) 
-    target_bu1 = 'Target/{}/'.format(sp['bu1'])
-    target_bu2 = 'Target/{}'.format(sp['bu2'])
-    ret["link"] = (
-    "ssh -p{} {}@{} 'bash -s' -- < rsync -a --link-dest={} {} {}"
-                .format(sp["port"], sp["user"], sp["host"],
-            sp["target"], sp["backup_name"], sp["suffix_length"]))
+    # 3  Run local rsync remotely (with parameters)
+    #    to create the hard link copy:
+    link_dest_file = os.path.join(sp["target"], sp["bu1"])
+    link_dest = "--link-dest={}".format(link_dest_file)
+    src = sp["source"]
+    dest = os.path.join(sp["target"], sp["bu0"])
+    print("""=============================
+    Four parameters:
+{}
+{}
+{}
+{}
+---------
+""".format(link_dest_file, link_dest, src, dest))
+    """
+rsync: link_stat "/home/bu.001" failed: No such file or directory (2)
+rsync: change_dir "/home/alex//Target/bu.001" failed: No such file or
+directory (2)
+rsync: change_dir#3 "/home/alex//Target" failed: No such file or
+directory (2)
+"""
+    ret["link"] = ' '.join([
+    "cd {}".format(sp["target"]),
+    "&&",
+    "link_dest={}".format(link_dest),
+    "&&",
+    "src={}".format(src),
+    "&&",
+    "dest={}".format(dest),
+    "&&",
+    "ssh -p{} {}@{}".format(sp["port"], sp["user"], sp["host"]),
+    '"rsync -avz $link_dest $src $dest"',
+    ])
     return ret
 
 ### Tests follow ###
 
 sections = [
     "test_local",
-    "test_remote_indi",
     "test_remote_pi",
+    "test_remote_indi",
     ]
 
-def test(section):
-    print(show_args(
-        get_commands(get_section_specifics(section))))
+def clear_testing_targets(sections=sections):
+    for n in range(len(sections)):
+        sp = get_section_specifics(sections[n])
+        command = (
+#   "ssh -p{} {}@{} 'bash -s' -- < rm -rf {}"
+    "ssh -p{} {}@{} 'rm -rf {}/*'"
+        .format(sp["port"], sp["user"], sp["host"], sp["target"]))
+        print(command)
+#       ret = subprocess.call(shlex.split(command))
+        ret = subprocess.call(command, shell=True)
+        if ret:
+            print("  !! Above command returned '{}'!!".format(ret))
+        else:
+            print("  Above command returned successfully.")
 
 def main():
-    print("Running 'backup.main()' tests .......")
+    print("Running 'BackUp.BackUp.src.backup.main()' tests .....")
+    clear_testing_targets()
     for n in range(len(sections)):
-        test(sections[n])
-        print(show_args(get_section_specifics(sections[n])))
-        check("Pause to examine results.")
+#       print("### currently for '{}' ###".format(sections[n]))
+        config = get_section_specifics(sections[n])
+        commands = get_commands(config)
+        print(show_args(config))
+        print(show_args(commands, "Commands:"))
+        for command in config['ordered_commands']:
+            response = input(
+            "? Execute next command:\n{}\n Enter 'y' to proceed.. ".
+                    format(commands[command]))
+            if response and response[0] in 'yY':
+#               print("calling command as follows:")
+#               print(shlex.split(commands[command]))
+#               ret = subprocess.call(shlex.split(commands[command]))
+                ret = subprocess.call(commands[command], shell=True)
+                print("Return code: {}.".format(ret))
+                if ret:
+                    print("Command failed!!")
+                check("Pause to examine results.")
+            else:
+                print("Moving on without execution...")
 
 if __name__ == '__main__':  # code block to run the application
     cwd = os.getcwd()

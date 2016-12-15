@@ -1,7 +1,4 @@
 *.pyc
-nextcommit
+*.swp
 *__pycache__*
-Backup/debug.txt
-Backup/results.txt
-todo
 

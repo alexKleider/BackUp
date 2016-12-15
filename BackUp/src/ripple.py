@@ -3,6 +3,9 @@
 # file: ripple.py
 
 """
+Usage:
+    ripple.py TARGET [BACKUP_NAME [SUFFIX_LENGTH]]
+
 Requires at least one positional argument: a target directory.
 Optional positional parameters:
     first is the backup_name- defaults to 'bu'.
@@ -45,16 +48,18 @@ else:
 
 prefix_length = len(backup_name)
 if _l > 3:
-    suffix_length = _args[3]
+    suffix_length = int(_args[3])
 else:
     suffix_length = 3
 
 bu_dir_length = len(backup_name) + 1 + suffix_length
 
 
-def is_a_backup(directory):
+def is_a_backup(directory, target=target):
     """
     A filter helper function: returns a Boolean.
+    The required parameter is a directory name- not a path.
+    The named parameter relies on the script's command line argument.
 
      b u . 0 0 0
         ^ ^ ^ ^
@@ -64,39 +69,43 @@ def is_a_backup(directory):
          `-------  2 (prefix_length)
          
     """
-    if (os.path.isdir(os.path.join(target, directory))
+    full_path = os.path.join(target, directory)
+    if (os.path.isdir(full_path)
     and len(directory)==bu_dir_length
     and directory[:prefix_length]==backup_name
     and directory[prefix_length] == '.'
     and directory[-suffix_length:].isdigit()
         ):
+#       print("'{}' is a backup.".format(full_path))
         return True
     else:
+#       print("'{}' is NOT a backup.".format(full_path))
         return False
 
 def rename(directory):
     new_dir_name = backup_name + '.' + "{:03n}".format(1 +
                             int(directory[-suffix_length:]))
-    print("Trying to 'mv {} {}'.".format(directory, new_dir_name))
+#   print("Trying to 'mv {} {}'.".format(directory, new_dir_name))
     ret = shutil.move(os.path.join(target, directory),
                     os.path.join(target, new_dir_name))
     return ret
 
 def main():
     if os.path.isdir(target):
-        print("You've given me an existing directory.")
-        print("'{}' contains:".format(target))
+#       print("You've given me an existing directory.")
+#       print("'{}' contains:".format(target))
         dir_listing = os.listdir(target)
         for item in dir_listing:
             print('\t' + item)
         backups_listing = sorted(filter(is_a_backup, dir_listing),
                                     reverse=True)
-        print("After filtration:")
+#       print("After filtration:")
         for item in backups_listing:
-            print('\t' + item + "Becomes {}".format(
+#           print("\t'" + item + "' renamed '{}'".format(
             rename(item)
             ))
 
 
 if __name__ == "__main__":
     main()
+

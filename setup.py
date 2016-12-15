@@ -1,3 +1,8 @@
+# Still a work in progress.
+
+# file: setup.py
+
+
 from distutils.core import setup
 setup(
     name = "Backup",

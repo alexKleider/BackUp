@@ -176,6 +176,26 @@ class ShowArgs(unittest.TestCase):
         self.assertEqual(bu.show_args(self.a_dict, self.header),
                         self.expected_4dict)
 
+class GetSuffix(unittest.TestCase):
+
+    def test_get_suffix(self):
+        test_data = (# number, length, returned
+                        (0, 0, None), 
+                        (1, 0, None),
+                        (0, 1, "0"),
+                        (10, 1, None),
+                        (999, 3, "999"),
+                        (111, 2, None),
+                        (4389, 5, "04389"),
+                        (9, 3, "009"),
+            
+        )
+        for number, length, returned in test_data:
+            with self.subTest(number=number,
+                                length=length,
+                                returned=returned):
+                self.assertEqual(bu.get_suffix(number, length),
+                                returned)
 
 class GetConfiguration(unittest.TestCase):
     
@@ -303,78 +323,6 @@ class MoveFiles(unittest.TestCase):
 
     def tearDown(self):
         subprocess.call(['./BackUp/tests/scripts/destroy.sh'])
-
-class GetConfiguration(unittest.TestCase):
-
-    DEFAULT = dict(
-        comment= 'default comment line',
-        source= '/path/directory',
-        target= '/path/directory/',
-        host= 'localhost',
-        port= '22',
-        user= 'alex',
-        backup_name= 'bu.',
-        suffix_length= '3',
-        exclude_file= '',
-        rippler= 'rip_bu.py',
-        # The following is calculated, not found in CONFIG:
-        max_number_of_snapshots= 999,
-        )
-
-    test_local = dict(
-        comment = 'for testing: local host both ends.',
-        source = 'tests/data/source/',
-        target = 'tests/data/dest',
-        host= 'localhost',
-        port= '22',
-        user= 'alex',
-        backup_name= 'bu.',
-        suffix_length= '3',
-        max_number_of_snapshots= 999,
-        exclude_file = 'tests/data/rip_exclude',
-        rippler= 'rip_bu.py',
-        )
-    
-    commands_local = dict(
-        rsync= 'rsync -a --delete  ' +
-            '--exclude-from=tests/data/rip_exclude ' +
-            'tests/data/source ' +
-            '/tests/data/dest',
-
-        ripple= './rip_bu.py',
-        link= '',
-          )
- 
-    test_remote = dict(
-        comment = 'for testing: bu on remote.',
-        source = 'tests/data/source/',
-        target = 'tests/data/dest',
-        host= 'pat.lan',
-        port= '22',
-        user= 'pi',
-        backup_name= 'bu.',
-        suffix_length= '3',
-        max_number_of_snapshots= 999,
-        exclude_file = 'tests/data/rip_exclude',
-        )
-
-    commands_remote = dict(
-        rsync= 'rsync -az --delete -e "ssh -p22 pi" ' +
-            '--exclude-from=tests/data/rip_exclude ' +
-            'tests/data/source ' +
-            'pat.lan:/var/BU/',
-
-        scp_conf= 'scp -p 22 Temp_File dest',
-        scp_script= 'scp -p 22 rip_bu.py dest',
-        chmod=
-    'ssh -oPort=22 -oUser=pi pat chmod 755 rip_bu.py',
-        ripple= 
-    'ssh -oPort=22 -oUser=pi pat.lan rip_bu.py',
-        )
-
-    def test_get_config_file_name(self):
-        self.assertEqual(bu.get_config_file_name(),
-                        bu.CONFIG_FILE)
 
 if __name__ == '__main__':  # code block to run the application
     unittest.main()
