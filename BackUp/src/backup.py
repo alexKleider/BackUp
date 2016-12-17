@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim: set file encoding=utf-8 :
 #
-# file: 'backup.py'
+# File: 'backup.py'
 # Part of ___, ____.
 
 # Copyright 2016 Alex Kleider
@@ -13,13 +13,15 @@ backup.py: main module of BackUp
 
 import os
 import sys
-import getpass
 import configparser
 #import shlex
 import subprocess
 
 CONFIG_FILE = 'BackUp/config'  # The default configuration file.
-RIPPLER = 'rippple.py'
+# RIPPLER = 'rippple.py'
+RIPPLER = 'rip_remote.py'
+LINKER = 'link_remote.py'
+REMOTELY = 'run_remotely.py'
 
 def show_args(args, name = 'Arguments'):
     """                     [../tests/test1.py: global_show_args]
@@ -77,16 +79,27 @@ def get_section_specifics(section=None):
     """
     Returns a dict of required data based on the config file.
     Relies on get_config_file_name().
-    Sets 'max_number_of_snapshots' based on 'suffix_length' 
-    Sets 'user' if not provided.
-    Sets "bu0" and "bu1".
-    Still needs to set:
-        1. target user as well as source user,
-            t_user  s_user
-        2. url of source machine as well as target machine,
-            t_host  s_host
-        3. ditto for port
-            t_port  s_port
+
+    As of Thu Dec 15 22:50:10 PST 2016
+    Arguments are ...
+      backup_name: bu
+      bu0: bu.000
+      bu1: bu.001
+      bu2: bu.002
+      comment: for testing: bu on remote host 10.10.10.10.
+      exclude_file: /home/alex/Py/BackUp/BackUp/tests/data/rip_exclude
+      host: 10.10.10.10
+      max_number_of_snapshots: 999  # Based on 'suffix_length' 
+      ordered_commands: ['rsync', 'ripple', 'link']
+      port: 22
+      rippler: /home/alex/Py/BackUp/BackUp/src/ripple.py
+      source: /home/alex/Py/BackUp/BackUp/tests/data/source/
+      suffix_length: 3
+      target: /home/alex/BU
+      to_expand: source target exclude_file rippler
+      user: alex  # If not provided, set by os.getlogin()
+      ... end of report.
+
     Not yet implemented is query for a <section> if not provided.
     """
     config = configparser.ConfigParser()
@@ -95,28 +108,24 @@ def get_section_specifics(section=None):
 #               .format(config_file_name))
     config.read(config_file_name)
     ret = {}
-    if section:
-#       print("""<get_section_specifics() being called
-#       with parameter '{}'.""".format(section))
-        if section:
-            if (section == "DEFAULT"
-            or section in config.sections()):
-                section_dict =  config[section]
-            else:  # No such section in file!!
-                print("""There is no such section in the file!!""")
-                sys.exit(1)
-        else:
-            print("""<get_section_specifics(section=None) does
-            not as yet support absence of a <section> parameter.""")
-            sys.exit(1)
+    if section is None:
+        # Yet to be implemented: query user for a section.
+        print("<get_section_specifics(section=None)> does not")
+        print("as yet support absence of a <section> parameter.")
+        sys.exit(1)
+    elif (section == "DEFAULT") or (section in config.sections()):
+        section_dict =  config[section]
+#       print("Calling <get_section_specifics({})>."
+#                                   .format(section))
 #       print("""It has the following key/value pairs:""")
-        for key in section_dict:
+        ret = {key:section_dict[key] for key in section_dict}
+#       for key in section_dict:
 #           print("{}: {}".format(key, section_dict[key]))
-            ret[key] = section_dict[key]
+#           ret[key] = section_dict[key]
         ret['max_number_of_snapshots'] = int(
                 '9' * int(ret['suffix_length']))
         if not ret['user']:
-            ret['user'] = getpass.getuser()
+            ret['user'] = os.getlogin()
         ret['bu0'] = "{}.{}".format(ret["backup_name"],
                             get_suffix(0, ret['suffix_length']))
         ret['bu1'] = "{}.{}".format(ret["backup_name"],
@@ -132,6 +141,9 @@ def get_section_specifics(section=None):
             ret[path_names[0]] = ''.join((ret[path_names[0]],'/'))
         ret["ordered_commands"] = ret["ordered_commands"].split()
         return ret
+    else:  # No such section in file!!
+        print("""There is no such section in the file!!""")
+        sys.exit(1)
 
 def get_commands(section_specifics):
     """
@@ -143,6 +155,10 @@ def get_commands(section_specifics):
             <source> \
             <host>:<target>/bu.000
     ## --exclude-from=FILE     read exclude patterns from FILE
+    2. Send the foreign script and its params to target host.
+    3. Run the foreign script on the target host:
+        to do the rippling and linking.
+    I've failed in my attempts to acheive the following:
     2. Run the local ripple.py script (with command line
     parameters) remotely (on the backup host:)
         $ ssh -p<port> <user>@<host> python3 -u - \
@@ -161,13 +177,11 @@ def get_commands(section_specifics):
     "bu1={}".format(sp["bu1"]),
     "&&",
     "&&",
-    if [ ! -d $bu1 ] then mkdir $bu1 fi
-
-
+    "if [ ! -d $bu1 ] then mkdir $bu1 fi",
     "prn.sh",
-    "${}".format("bu1")-av --link-dest=$PWD/prior_dir host:src_dir/
-    new_dir/
-
+    "${}".format("bu1"),
+    "-av",
+    "--link-dest=$PWD/prior_dir host:src_dir/new_dir/",
     ])
 
     # 1  Run rsync:

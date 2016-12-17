@@ -1,0 +1,61 @@
+# Overview of the problem
+# & how to deal with it.
+
+# ROUND ZERO-
+
+# STEP 0: Assume we have a (MODIFY) source.
+../Test/setup.sh  # To delete the previous source.
+../Test/setup.sh  # To create a source directory.
+# Also zero out the target (/home/alex/BU) directory
+# on the backup host.
+
+# STEP 1: From the source machine (making it trivial)
+# do the BACKUP:
+rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ 10.10.10.10:/home/alex/BU/bu.000
+
+# Next we must ripple and link:
+# To do so, we need the params file and the remotely.py file to be on
+# the backup host in its target directory:
+#
+# Attempts to run local scripts with local params on target host
+# failed so now plan is to copy scripts and a params file to target
+# and use run_remotely.py to call ssh and run them there.
+#
+# Make sure both scripts are in the target directory:
+./run_remotely.py params,remote.py /home/alex/BU 10.10.10.10 alex 22
+
+# ROUND ONE-
+# MODIFY content in Source:
+echo First mod, adding a line to DirA/fileA1 >> /home/alex/Py/BackUp/Sandbox/Source/DirA/fileA1
+# BACKUP
+rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ 10.10.10.10:/home/alex/BU/bu.000
+# Then again:
+./run_remotely.py params,remote.py /home/alex/BU 10.10.10.10 alex 22
+
+# ROUND TWO-
+# MODIFY
+echo Second mod: Create DirB/fileNew /w this text > /home/alex/Py/BackUp/Sandbox/Source/DirB/fileNew
+# BACKUP
+rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ 10.10.10.10:/home/alex/BU/bu.000
+# Then again:
+./run_remotely.py params,remote.py /home/alex/BU 10.10.10.10 alex 22
+
+# ROUND THREE-
+# Modify content again:
+echo Third mod: Add another line >> /home/alex/Py/BackUp/Sandbox/Source/DirB/fileNew
+# BACKUP
+rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ 10.10.10.10:/home/alex/BU/bu.000
+# Then again:
+./run_remotely.py params,remote.py /home/alex/BU 10.10.10.10 alex 22
+
+# Round FOUR-
+# Modify content yet again:
+echo 1 of 2 mods this FOURth time: > /home/alex/Py/BackUp/Sandbox/Source/DirA/fileNewA1
+echo Create DirA/fileNewA1 and add this text > /home/alex/Py/BackUp/Sandbox/Source/DirA/fileNewA1
+echo 2 of 2 mods this FOURth time: >>  /home/alex/Py/BackUp/Sandbox/Source/DirB/fileNew
+echo Fourth modification >>  /home/alex/Py/BackUp/Sandbox/Source/DirB/fileNew
+# BACKUP
+rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ 10.10.10.10:/home/alex/BU/bu.000
+# Then again:
+./run_remotely.py params,remote.py /home/alex/BU 10.10.10.10 alex 22
+

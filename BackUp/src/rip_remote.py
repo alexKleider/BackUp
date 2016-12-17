@@ -2,15 +2,26 @@
 
 # File: rip_remote.py
 
-# This is the rippling script that expects itself to reside on the
-# target host in the target directory.  It checks for the presence
-# of a 'params' file in the same directory and if found, uses it to
-# over-ride the values of the two parameters it requires:
-#    buckup_prefix
-#    suffix_length
+"""
+REDACTED: The functionality of this script has been
+incorporated into remote.py
 
-# It is called from the source host using the following command:
-# ssh -p22 alex@10.10.10.10 ${target}/rip_remote.py
+This is the rippling script that expects itself to reside on the
+target host in the target directory.  It checks for the presence
+of a 'params' file in the same directory and if found, uses it to
+over-ride the values of the two parameters it requires:
+    buckup_prefix
+    suffix_length
+
+Its purpose is to take files of the form ${bu}.${n} and
+rename each to ${bu}.${n+1}
+
+It is called from the source host using run_remotely.py which
+sets up and issues the following command:
+ssh -p22 alex@10.10.10.10 ${target}/rip_remote.py
+
+See run_remotely.__doc__
+"""
 
 import os
 import shutil
@@ -43,11 +54,10 @@ if os.path.isfile(path2params):
     if n_lines > 1:
         suffix_length = int(lines[1])
 
-
-print("SANITY CHECK:")    
-print("  target is {}.".format(target))
-print("  backup_prefix is '{}'.".format(backup_prefix))
-print("  suffix_length is '{}'.".format(suffix_length))
+#print("SANITY CHECK:")    
+#print("  target is {}.".format(target))
+#print("  backup_prefix is '{}'.".format(backup_prefix))
+#print("  suffix_length is '{}'.".format(suffix_length))
 
 def is_a_backup(directory,
                 target=target,
@@ -76,10 +86,10 @@ def is_a_backup(directory,
     and directory[prefix_length] == '.'
     and directory[-suffix_length:].isdigit()
         ):
-        print("'{}' is a backup.".format(full_path))
+#       print("'{}' is a backup.".format(full_path))
         return True
     else:
-        print("'{}' is NOT a backup.".format(full_path))
+#       print("'{}' is NOT a backup.".format(full_path))
         return False
 
 def rename(directory):
@@ -98,22 +108,22 @@ def main():
         rename()
     """
     if os.path.isdir(target):
-        print("You've given me an existing directory.")
-        print("'{}' contains:".format(target))
+#       print("You've given me an existing directory.")
+#       print("'{}' contains:".format(target))
         dir_listing = os.listdir(target)
-        for item in dir_listing:
-            print('\t' + item)
+#       for item in dir_listing:
+#           print('\t' + item)
         unsorted_backups_listing = [
           listing for listing in dir_listing if is_a_backup(listing)]
         sorted_backups_listing = sorted(unsorted_backups_listing,
                                     reverse=True)
-        print("Contents of sorted_backups_listing:")
-        for item in sorted_backups_listing:
-            print('\t' + item)
-        print("Now for the renaming:")
+#       print("Contents of sorted_backups_listing:")
+#       for item in sorted_backups_listing:
+#           print('\t' + item)
+#       print("Now for the renaming:")
         for item in sorted_backups_listing:
             new_name = rename(item)
-            print("\t '{}' renamed '{}'.".format(item, new_name))
+#           print("\t '{}' renamed '{}'.".format(item, new_name))
 
 
 if __name__ == "__main__":

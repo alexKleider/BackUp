@@ -2,18 +2,26 @@
 
 # File: link_remote.py
 
-# This is the linking script that expects itself to reside on the
-# target host in the target directory.  It checks for the presence
-# of a 'params' file in the same directory and if found, uses it to
-# over-ride the values of the two parameters it requires:
-#    backup_prefix
-#    suffix_length
+"""
+REDACTED: The functionality of this script has been
+incorporated into remote.py
 
-# It is called from the source host using the following command:
-# ssh -p22 alex@10.10.10.10 ${target}/link_remote.py
+This is the linking script that expects itself to reside on the
+target host in the target directory.  It checks for the presence
+of a 'params' file in the same directory and if found, uses it to
+over-ride the values of the two parameters it requires:
+     backup_prefix
+     suffix_length
 
-# It sets up and runs the following command on the target host:
-# rsync -av --link-dest=${TARGET}/bu.001 ${TARGET}/bu.001/  ${TARGET}/bu.000 
+It sets up and runs the following command on its own (target) host:
+rsync -av --link-dest=${TARGET}/bu.001 ${TARGET}/bu.001/  ${TARGET}/bu.000 
+
+It is called from the source host using run_remotely.py which
+sets up and issues the following command:
+ssh -p22 alex@10.10.10.10 ${target}/link_remote.py
+
+See run_remotely.__doc__
+"""
 
 import os
 import subprocess
@@ -75,5 +83,5 @@ command_sequence = (
 #    ret = subprocess.call(command_sequence)
 ret = subprocess.call(command_sequence)
 if ret:
-    print("ERROR: creation of bu.000 using linking failed."
+    print("ERROR: creation of bu.000 using linking failed.")
 
