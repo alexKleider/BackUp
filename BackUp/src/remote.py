@@ -38,9 +38,6 @@ param_filename = 'params'
 
 backup_prefix = 'bu'
 suffix_length = 3
-# the following are how they are declared in the config file:
-#  backup_name = 'bu'
-#  suffix_length = 3
 
 # We expect our target directory to be
 # the one containing this script:

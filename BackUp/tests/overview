@@ -1,5 +1,9 @@
 # Overview of the problem
 # & how to deal with it.
+#
+# This file can now be sourced.
+# you will likely need to change the paths since things depend on a
+# Sandbox that is not part of the repository.
 
 # ROUND ZERO-
 
@@ -11,7 +15,7 @@
 
 # STEP 1: From the source machine (making it trivial)
 # do the BACKUP:
-rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ 10.10.10.10:/home/alex/BU/bu.000
+rsync -avz --delete /home/alex/Py/BackUp/Sandbox/Source/ alex@10.10.10.10:/home/alex/BU/bu.000
 
 # Next we must ripple and link:
 # To do so, we need the params file and the remotely.py file to be on

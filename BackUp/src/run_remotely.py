@@ -3,7 +3,9 @@
 # File: run_remotely.py
 
 """
-A python module which provides <send> and <run> functions:
+A python module which provides <send> and <run> functions
+as well as a run_remotely function
+:
 The first parameter of each is a list of files expected to
 be in the same directory as is run_remotely.py.
 
@@ -108,20 +110,27 @@ def run(scripts, target, host=None, user=None, port=None):
 def string2list(csv, delimeter=','):
     return csv.split(delimeter)
 
+def run_remotely(files, target, host=None, user=None, port=None):
+    send(files, target, host, user, port)
+    run(files, target, host, user, port)
+
 if __name__ == "__main__":
     # Create a 'params' file.
     directory = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(directory, 'params'), 'w') as f:
         f.write("bu\n3")
+
     # Set defaults:
     files_py = ("trivial.py",)
-    #files_py = ("link_remotely.py", "rip_remotely.py",)
+    #files_py = ("remotely.py",)
     files_txt = ('params',)
     files = files_py + files_txt
     target = "/home/alex/BU"
     host = "10.10.10.10"
     user = os.getlogin()
     port = 22
+
+    # Over-ride defaults with command line arguments if any:
     args = sys.argv[1:]
     n_args = len(args)
     if n_args > 0: files = string2list(args[0])
@@ -129,6 +138,7 @@ if __name__ == "__main__":
     if n_args > 2: host = args[2]
     if n_args > 3: user = args[3]
     if n_args > 4: port = args[4]
-    send(files, target, host, user, port)
-    run(files, target, host, user, port)
+
+    # Do the work:
+    run_remotely(files, target, host, user, port)
 
