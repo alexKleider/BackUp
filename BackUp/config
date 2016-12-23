@@ -40,8 +40,8 @@ source = BackUp/tests/data/source/
 target = /path/to/directory/holding/snapshots
 
 # You may want to use an "exclude" file as defined by man rsync.
-# exclude_file = /path/directory/rip_exclude
-exclude_file =
+# exclude_file = /path/directory/rsync_exclude
+exclude_file = ~/rsync_exclude
 # If the exclude_file is not set, or if it refers to a file that
 # doesn't exist, this parameter is silently ignored.
 
@@ -95,7 +95,7 @@ to_expand = source target exclude_file
 comment = for testing: local host both ends.
 source = BackUp/tests/data/source/
 target = BackUp/tests/data/target
-exclude_file = BackUp/tests/data/rip_exclude
+exclude_file = BackUp/tests/data/rsync_exclude
 
 [test_remote_indi]
 comment = for testing: bu on remote host indi303.net.
@@ -103,7 +103,7 @@ source = BackUp/tests/data/source/
 target = /mnt/BU/Sandbox
 host = indi303.net
 port = 5322
-exclude_file = BackUp/tests/data/rip_exclude
+exclude_file = BackUp/tests/data/rsync_exclude
 
 [test_remote_pi]
 comment = for testing: bu on remote host pi3-0
@@ -111,7 +111,7 @@ source = BackUp/tests/data/source/
 target = /home/alex/BU
 host = 10.0.0.230
 user = alex
-exclude_file = BackUp/tests/data/rip_exclude
+exclude_file = BackUp/tests/data/rsync_exclude
 
 [tn]
 comment = testing on local network: ~/Soups to dp4:/mnt/BU/Soups
@@ -131,7 +131,7 @@ comment = My home directory to dp4 via dp4 AP within Bolinas.
 source = /home/alex/
 target = /mnt/BU/X301alex
 host = dp4wifi
-# exclude_file = /path/directory/rip_exclude
+# exclude_file = /path/directory/rsync_exclude
 
 [bolinas]
 comment = My home directory to Bolinas. 
@@ -143,7 +143,7 @@ port = 5224
 [loft]
 comment = My home directory to loft.
 source = /home/alex/
-target = /mnt/BU/X301alex
+target = /mnt/BU/X301
 host = indi303.net
 port = 5322
 

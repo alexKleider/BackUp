@@ -1,0 +1,7 @@
+.*
+*.gz
+*.zip
+*.tar
+.git
+Downloads/*
+venv/*

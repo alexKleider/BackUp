@@ -39,9 +39,9 @@ from docopt import docopt
 #    opts: from command line via docopt,  and
 #    args: from a configuration file.
 
-opts = docopt(__doc__, version="backu.py 0.0.0")
+opts = docopt(__doc__, version="backup.py 0.1.0")
 
-def show_args(args, name = 'Arguments'):
+def show_args(args, name='Arguments'):
     """                     [../tests/test1.py: global_show_args]
     A helper function for testing.
     Returns a string displaying args, which can be any iteration
@@ -143,10 +143,7 @@ def get_section_specifics(section=None, opts=opts):
                                     ret["backup_prefix"],
                                     int(ret["suffix_length"]),
                                     0)
-        if opts["--debug"] == 'True':
-            ret["debug"] = True
-        else:
-            ret["debug"] = False
+        ret["debug"] = opts["--debug"]
         if not ret['user']:
             ret['user'] = os.getlogin()
         if not ret['port']: ret['port'] = '22'
@@ -290,7 +287,7 @@ def send_and_run(args):
 
 def backup(args):
     rsync(args)
-    create_and_sent_params_file(args)
+    create_and_send_params_file(args)
     send_and_run(args)
 
 
@@ -314,8 +311,16 @@ def clear_testing_targets(sections=sections):
             print("  Above command returned successfully.")
 
 if __name__ == '__main__':  # code block to run the application
+    print("""
+    #################################################
+    ###########  Running Backup  ####################
+    #################################################
+    """)
     cwd = os.getcwd()
     if not (cwd in sys.path):
         sys.path.insert(0, cwd)
-    from BackUp.tests.test1 import check
+    args = get_section_specifics(opts["--section"])
+#   print(show_args(opts, "Command line options"))
+#   print(show_args(args))
+    backup(args)
 
